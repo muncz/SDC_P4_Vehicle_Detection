@@ -1,4 +1,13 @@
 # Vehicle Detection
+
+## Project requirements:
+
+Python 3.5+ with:
+* openCV 3.0
+* skit-learn
+
+
+
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
 
