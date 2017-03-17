@@ -116,18 +116,24 @@ def get_img_features(colr_img):
 
 def train_classifier():
 
+    ts = time.time()
     car_features = []
     notcar_features = []
 
     vehicles_paths, non_vehicles_paths = get_train_images()
+    print(round(time.time() - ts, 2), 'Images Loaded')
 
     for f in vehicles_paths:
         img =  mpimg.imread(f)
         car_features.append(get_img_features(img))
 
+    print(round(time.time() - ts, 2), 'vehicles features extracted')
+
     for f in non_vehicles_paths:
         img =  mpimg.imread(f)
         notcar_features.append(get_img_features(img))
+
+    print(round(time.time() - ts, 2), 'NON vehicles features extracted')
 
     y = np.hstack((np.ones(len(car_features)),
                    np.zeros(len(notcar_features))))
@@ -135,6 +141,7 @@ def train_classifier():
     X = np.vstack((car_features, notcar_features)).astype(np.float64)
     # Fit a per-column scaler
     X_scaler = StandardScaler().fit(X)
+    print(round(time.time() - ts, 2), 'Data Scaled')
     # Apply the scaler to X
     scaled_X = X_scaler.transform(X)
 
@@ -142,6 +149,8 @@ def train_classifier():
     rand_state = np.random.randint(0, 100)
     X_train, X_test, y_train, y_test = train_test_split(
         scaled_X, y, test_size=0.2, random_state=rand_state)
+
+    print(round(time.time() - ts, 2), 'Data splited')
 
     #print('Using:', orient, 'orientations', pix_per_cell,          'pixels per cell and', cell_per_block, 'cells per block')
     print('Feature vector length:', len(X_train[0]))
@@ -151,25 +160,17 @@ def train_classifier():
     t = time.time()
     svc.fit(X_train, y_train)
     t2 = time.time()
-    print(round(t2 - t, 2), 'Seconds to train SVC...')
+    print(round(time.time() - ts, 2), 'Data trainned - SVC')
     # Check the score of the SVC
     print('Test Accuracy of SVC = ', round(svc.score(X_test, y_test), 4))
     # Check the prediction time for a single sample
     t = time.time()
     n_predict = 10
-    print('My SVC predicts: ', svc.predict(X_test[0:n_predict]))
+    print('My SVC predicts    : ', svc.predict(X_test[0:n_predict]))
     print('For these', n_predict, 'labels: ', y_test[0:n_predict])
     t2 = time.time()
     print(round(t2 - t, 5), 'Seconds to predict', n_predict, 'labels with SVC')
 
-
-img = mpimg.imread("report/nei4.png")
-
-
-print (get_img_features(img))
-
-
-feature_vec = bin_spatial(img, color_space='RGB', size=(32, 32))
 
 train_classifier()
 
