@@ -11,6 +11,7 @@ from skimage.feature import hog
 # for scikit-learn >= 0.18 use:
 # from sklearn.model_selection import train_test_split
 from sklearn.cross_validation import train_test_split
+import pickle
 
 
 
@@ -109,7 +110,7 @@ def extract_features(imgs, cspace='RGB', orient=9,
 
 
 
-def train_data(limit_train_data):
+def train_data(limit_train_data=0):
     # Divide up into cars and notcars
     car_images = glob.glob('train_data/vehicles/*/*.png')
     not_car_images = glob.glob('train_data/non-vehicles/*/*.png')
@@ -125,8 +126,9 @@ def train_data(limit_train_data):
 
     # Reduce the sample size because HOG features are slow to compute
     # sample_size = 100
-    # cars = cars[0:sample_size]
-    # notcars = notcars[0:sample_size]
+    if (limit_train_data > 0):
+        cars = cars[0:limit_train_data]
+        notcars = notcars[0:limit_train_data]
 
 
 
@@ -172,11 +174,34 @@ def train_data(limit_train_data):
     print('Test Accuracy of SVC = ', round(svc.score(X_test, y_test), 4))
     # Check the prediction time for a single sample
     t=time.time()
-    n_predict = 10
+    n_predict = 100
     print('My SVC predicts: ', svc.predict(X_test[0:n_predict]))
     print('For these',n_predict, 'labels: ', y_test[0:n_predict])
     t2 = time.time()
     print(round(t2-t, 5), 'Seconds to predict', n_predict,'labels with SVC')
+    return svc
 
 
-train_data()
+def save_train_model(svc,filename):
+    pickle.dump(svc, open(filename, "wb"))
+    print("Model saved in pckle file: ",filename)
+
+def load_svc_model(filename):
+    return pickle.load(filename,"rb")
+
+
+
+
+
+TRAIN = True
+
+svc_filename = 'svc_model.p'
+if TRAIN:
+    svc = train_data()
+    save_train_model(svc,svc_filename)
+else:
+    svc = load_svc_model(svc_filename)
+
+
+
+
