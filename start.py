@@ -1,6 +1,17 @@
 import cv2
+import train
 
 
+
+
+TRAIN = False
+
+svc_filename = 'svc_model.p'
+if TRAIN:
+    svc = train.train_data()
+    train.save_train_model(svc,svc_filename)
+else:
+    svc = train.load_svc_model(svc_filename)
 
 
 

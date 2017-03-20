@@ -187,20 +187,11 @@ def save_train_model(svc,filename):
     print("Model saved in pckle file: ",filename)
 
 def load_svc_model(filename):
-    return pickle.load(filename,"rb")
+    return pickle.load(open(filename,"rb"))
 
 
 
 
-
-TRAIN = True
-
-svc_filename = 'svc_model.p'
-if TRAIN:
-    svc = train_data()
-    save_train_model(svc,svc_filename)
-else:
-    svc = load_svc_model(svc_filename)
 
 
 
