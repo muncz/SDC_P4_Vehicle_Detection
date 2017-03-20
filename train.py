@@ -179,9 +179,27 @@ def train_data(limit_train_data=0):
     print('For these',n_predict, 'labels: ', y_test[0:n_predict])
     t2 = time.time()
     print(round(t2-t, 5), 'Seconds to predict', n_predict,'labels with SVC')
-    return svc
 
+    dist_pickle = {}
+    dist_pickle["svc"] = svc
+    dist_pickle["scaler"] = X_scaler
+    dist_pickle["orient"] = orient
+    dist_pickle["pix_per_cell"] = pix_per_cell
+    dist_pickle["cell_per_block"] = cell_per_block
+    dist_pickle["spatial_size"] = spatial_size
+    dist_pickle["hist_bins"] = hist_bins
 
+    return dist_pickle
+
+"""
+    dist_pickle["svc"] = svc
+    dist_pickle["scaler"] = X_scaler
+    dist_pickle["orient"] = orient
+    dist_pickle["pix_per_cell"] = pix_per_cell
+    dist_pickle["pix_per_cell"] = cell_per_block
+    dist_pickle["spatial_size"] = spatial_size
+    dist_pickle["hist_bins"] = hist_bins
+"""
 def save_train_model(svc,filename):
     pickle.dump(svc, open(filename, "wb"))
     print("Model saved in pckle file: ",filename)
