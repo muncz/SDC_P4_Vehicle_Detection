@@ -12,6 +12,19 @@ from skimage.feature import hog
 # from sklearn.model_selection import train_test_split
 from sklearn.cross_validation import train_test_split
 
+
+
+spatial_size=(32, 32)
+hist_bins=32
+hist_range=(0, 256)
+
+colorspace = 'HLS'  # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+orient = 12
+pix_per_cell = 8
+cell_per_block = 2
+hog_channel = "ALL"  # Can be 0, 1, 2, or "ALL"
+
+
 # Define a function to return HOG features and visualization
 def get_hog_features(img, orient, pix_per_cell, cell_per_block,
                         vis=False, feature_vec=True):
@@ -30,6 +43,24 @@ def get_hog_features(img, orient, pix_per_cell, cell_per_block,
 
 # Define a function to extract features from a list of images
 # Have this function call bin_spatial() and color_hist()
+def bin_spatial(img, size=(32, 32)):
+    # Use cv2.resize().ravel() to create the feature vector
+    features = cv2.resize(img, size).ravel()
+    # Return the feature vector
+    return features
+
+# Define a function to compute color histogram features
+def color_hist(img, nbins=32, bins_range=(0, 256)):
+    # Compute the histogram of the color channels separately
+    channel1_hist = np.histogram(img[:,:,0], bins=nbins, range=bins_range)
+    channel2_hist = np.histogram(img[:,:,1], bins=nbins, range=bins_range)
+    channel3_hist = np.histogram(img[:,:,2], bins=nbins, range=bins_range)
+    # Concatenate the histograms into a single feature vector
+    hist_features = np.concatenate((channel1_hist[0], channel2_hist[0], channel3_hist[0]))
+    # Return the individual histograms, bin_centers and feature vector
+    return hist_features
+
+
 def extract_features(imgs, cspace='RGB', orient=9,
                         pix_per_cell=8, cell_per_block=2, hog_channel=0):
     # Create a list to append feature vectors to
@@ -54,6 +85,10 @@ def extract_features(imgs, cspace='RGB', orient=9,
             else: feature_image = np.copy(image)
 
             # Call get_hog_features() with vis=False, feature_vec=True
+            spatial_features = bin_spatial(feature_image, size=spatial_size)
+            # Apply color_hist() also with a color space option now
+            hist_features = color_hist(feature_image, nbins=hist_bins, bins_range=hist_range)
+
             if hog_channel == 'ALL':
                 hog_features = []
                 for channel in range(feature_image.shape[2]):
@@ -65,7 +100,8 @@ def extract_features(imgs, cspace='RGB', orient=9,
                 hog_features = get_hog_features(feature_image[:,:,hog_channel], orient,
                             pix_per_cell, cell_per_block, vis=False, feature_vec=True)
             # Append the new feature vector to the features list
-            features.append(hog_features)
+            #features.append(hog_features)
+            features.append(np.concatenate((spatial_features, hist_features,hog_features)))
         except:
             pass
     # Return list of feature vectors
@@ -73,7 +109,7 @@ def extract_features(imgs, cspace='RGB', orient=9,
 
 
 
-def train_data():
+def train_data(limit_train_data):
     # Divide up into cars and notcars
     car_images = glob.glob('train_data/vehicles/*/*.png')
     not_car_images = glob.glob('train_data/non-vehicles/*/*.png')
@@ -88,16 +124,11 @@ def train_data():
 
 
     # Reduce the sample size because HOG features are slow to compute
-    # The quiz evaluator times out after 13s of CPU time
-    # sample_size = 500
+    # sample_size = 100
     # cars = cars[0:sample_size]
     # notcars = notcars[0:sample_size]
 
-    colorspace = 'HLS' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
-    orient = 12
-    pix_per_cell = 8
-    cell_per_block = 2
-    hog_channel = "ALL" # Can be 0, 1, 2, or "ALL"
+
 
     t=time.time()
     car_features = extract_features(cars, cspace=colorspace, orient=orient,
@@ -110,6 +141,7 @@ def train_data():
     print(round(t2-t, 2), 'Seconds to extract HOG features...')
     # Create an array stack of feature vectors
     X = np.vstack((car_features, notcar_features)).astype(np.float64)
+
     # Fit a per-column scaler
     X_scaler = StandardScaler().fit(X)
     # Apply the scaler to X
@@ -120,9 +152,11 @@ def train_data():
 
 
     # Split up data into randomized training and test sets
-    rand_state = np.random.randint(0, 100)
+    rand_state = np.random.randint(0, 10)
     X_train, X_test, y_train, y_test = train_test_split(
         scaled_X, y, test_size=0.2, random_state=rand_state)
+
+
 
     print('Using:',orient,'orientations',pix_per_cell,
         'pixels per cell and', cell_per_block,'cells per block')
