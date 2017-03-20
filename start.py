@@ -99,9 +99,16 @@ def draw_boxes(img, bboxes, color=(0, 0, 255), thick=3):
     return draw_img
 
 
+def history_to_single_list():
+    bbox_list = []
+    for history in heatmap_history:
+        for box in history:
+            bbox_list.append(box)
+    return bbox_list
+
 
 cap = cv2.VideoCapture('project_video.mp4')
-# cap = cv2.VideoCapture('part1.mp4')
+cap = cv2.VideoCapture('test_video.mp4')
 # cap = cv2.VideoCapture('harder_challenge_video.mp4')
 #cap = cv2.VideoCapture('challenge_video.mp4')
 
@@ -122,6 +129,7 @@ hist_bins = svc_pickle["hist_bins"]
 out_img,boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins)
 
 print(boxes)
+
 
 
 
@@ -176,6 +184,16 @@ draw_img = draw_labeled_bboxes(np.copy(out_img), labels)
 plt.imshow(draw_img)
 plt.show()
 
+heatmap_history = []
+heatmap_history_length = 12
+
+def append_heatmap_history(bboxes):
+    heatmap_history.append(bboxes)
+    if len(heatmap_history) > heatmap_history_length:
+        del heatmap_history[0]
+
+
+
 frame_id = 0
 while(cap.isOpened()):
 
@@ -184,9 +202,57 @@ while(cap.isOpened()):
     in_img = out
     if ret==True:
 
-        out = find_cars(out, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block,
+        ystart = 400
+        ystop = 656
+        scale = 1.5
+
+        out,boxes = find_cars(out, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block,
                             spatial_size, hist_bins)
-        cv2.imshow('result', out )
+
+        append_heatmap_history(boxes)
+
+        ystart = 380
+        ystop = 480
+        scale = 1
+
+        out,boxes = find_cars(out, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block,
+                            spatial_size, hist_bins)
+
+
+        append_heatmap_history(boxes)
+
+        ystart = 500
+        ystop = 700
+        scale = 2.5
+
+        out,boxes = find_cars(out, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block,
+                            spatial_size, hist_bins)
+
+
+
+        append_heatmap_history(boxes)
+
+        boxes = history_to_single_list()
+
+        heat = np.zeros_like(out[:, :, 0]).astype(np.float)
+        heat = add_heat(heat, boxes)
+        cv2.imshow('heatmap', heat)
+        heat = apply_threshold(heat, 12)
+
+        heatmap = np.clip(heat, 0, 255)
+
+        labels = label(heatmap)
+
+        draw_img = draw_labeled_bboxes(np.copy(out), labels)
+
+
+        cv2.imshow('result', draw_img )
+
+        print("heatmap points:", boxes)
+
+        filename = ("video/frame_{:04d}.png".format(frame_id))
+        cv2.imwrite(filename,draw_img)
+        frame_id += 1
 
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
