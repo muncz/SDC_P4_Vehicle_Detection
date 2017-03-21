@@ -3,10 +3,12 @@ import train
 import numpy as np
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
+import random
+import settings
 
 
 
-TRAIN = False
+TRAIN = settings.TRAIN
 
 svc_filename = 'svc_model.p'
 if TRAIN:
@@ -17,6 +19,65 @@ else:
 
 
 print(svc_pickle)
+svc = svc_pickle["svc"]
+X_scaler = svc_pickle["scaler"]
+orient = svc_pickle["orient"]
+pix_per_cell = svc_pickle["pix_per_cell"]
+cell_per_block = svc_pickle["cell_per_block"]
+spatial_size = svc_pickle["spatial_size"]
+hist_bins = svc_pickle["hist_bins"]
+
+
+def slide_window(img, classifier, y_start, y_stop, x_start, x_stop, overlay,show_rectangles = False):
+
+    #Her i will store the images that contain all the result boxes
+    boxes = []
+
+    y_size = y_stop - y_start
+    x_size = x_stop - x_start
+    window_size = (y_size,y_size)
+    step_size = y_size - int(y_size * overlay)
+    steps = int(x_size / step_size)
+    print(x_size,y_size,step_size,steps)
+    for step_id in range(steps):
+        x_left = (x_start + step_size*step_id)
+        x_right = (x_start + step_size*step_id + y_size)
+        y_top = y_start
+        y_bot = y_stop
+        x_max = x_stop
+
+
+        if( x_right > x_max):
+            x_right = x_max
+            x_left = x_max - y_size
+
+        bbox = (x_left, y_bot), (x_right, y_top)
+        color = (random.randint(0,255),random.randint(0,255),random.randint(0,255))
+        thick = 7
+        if show_rectangles:
+            cv2.rectangle(img, bbox[0], bbox[1], color, thick)
+
+        subimg = img[y_top:y_bot,x_left:x_right,:]
+        feature_img = cv2.resize(subimg, (64, 64))
+        concentrated_features = train.img_features(feature_img)
+        print(concentrated_features)
+        #print("x",concentrated_features.reshape(1,-1))
+        concentrated_features = X_scaler.transform(concentrated_features)
+        sub_score = (classifier.predict(concentrated_features))
+        if (sub_score[0] > 0):
+            print("Found")
+            boxes.append(bbox)
+    return boxes
+
+
+
+
+
+
+
+
+
+
 
 def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins):
     draw_img = np.copy(img)
@@ -25,7 +86,7 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
     boxes = []
 
     img_tosearch = img[ystart:ystop, :, :]
-    ctrans_tosearch = cv2.cvtColor(img_tosearch, cv2.COLOR_RGB2HLS)
+    ctrans_tosearch = cv2.cvtColor(img_tosearch, cv2.COLOR_RGB2YCrCb)
     if scale != 1:
         imshape = ctrans_tosearch.shape
         ctrans_tosearch = cv2.resize(ctrans_tosearch, (np.int(imshape[1] / scale), np.int(imshape[0] / scale)))
@@ -99,6 +160,39 @@ def draw_boxes(img, bboxes, color=(0, 0, 255), thick=3):
     return draw_img
 
 
+def draw_boxes_list(img, bboxes_list, color=(0, 0, 255), thick=3):
+    # Make a copy of the image
+    draw_img = np.copy(img)
+    for bboxes in bboxes_list:
+
+        # Iterate through the bounding boxes
+        for bbox in bboxes:
+            #color = (random.randint(0,255),random.randint(0,255),random.randint(0,255))
+            # Draw a rectangle given bbox coordinates
+            cv2.rectangle(draw_img, bbox[0], bbox[1], color, thick)
+        # Return the image copy with boxes drawn
+    return draw_img
+
+# img = mpimg.imread("report/sample1.png")
+# boxes1 = slide_window(img,svc,430,660,40,1250,0.5)
+# boxes2 = slide_window(img,svc,388,578,40,1250,0.5)
+# boxes3 = slide_window(img,svc,408,524,40,1250,0.5)
+# boxes4 = slide_window(img,svc,408,490,40,1250,0.5)
+# boxes5 = slide_window(img,svc,408,460,40,1250,0.5)
+#
+# BOXES = []
+# BOXES.append(boxes1)
+# BOXES.append(boxes2)
+# BOXES.append(boxes3)
+# BOXES.append(boxes4)
+# BOXES.append(boxes5)
+
+
+# out_img = draw_boxes_list(img,BOXES)
+# plt.imshow(out_img)
+# plt.show()
+
+
 def history_to_single_list():
     bbox_list = []
     for history in heatmap_history:
@@ -118,13 +212,7 @@ scale = 1.5
 
 img = mpimg.imread("report/sample1.png")
 
-svc = svc_pickle["svc"]
-X_scaler = svc_pickle["scaler"]
-orient = svc_pickle["orient"]
-pix_per_cell = svc_pickle["pix_per_cell"]
-cell_per_block = svc_pickle["cell_per_block"]
-spatial_size = svc_pickle["spatial_size"]
-hist_bins = svc_pickle["hist_bins"]
+
 
 out_img,boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins)
 
@@ -202,56 +290,31 @@ while(cap.isOpened()):
     in_img = out
     if ret==True:
 
-        ystart = 400
-        ystop = 656
-        scale = 1.5
-
-        out,boxes = find_cars(out, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block,
-                            spatial_size, hist_bins)
-
-        append_heatmap_history(boxes)
-
-        ystart = 380
-        ystop = 480
-        scale = 1
-
-        out,boxes = find_cars(out, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block,
-                            spatial_size, hist_bins)
 
 
-        append_heatmap_history(boxes)
+        boxes1 = slide_window(out, svc, 430, 660, 40, 1250, 0.5)
+        boxes2 = slide_window(out, svc, 388, 578, 40, 1250, 0.5)
+        boxes3 = slide_window(out, svc, 408, 524, 40, 1250, 0.5)
+        boxes4 = slide_window(out, svc, 408, 490, 40, 1250, 0.5)
+        boxes5 = slide_window(out, svc, 408, 460, 40, 1250, 0.5)
 
-        ystart = 500
-        ystop = 700
-        scale = 2.5
+        BOXES = []
+        BOXES.append(boxes1)
+        BOXES.append(boxes2)
+        BOXES.append(boxes3)
+        BOXES.append(boxes4)
 
-        out,boxes = find_cars(out, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block,
-                            spatial_size, hist_bins)
+        out = draw_boxes_list(in_img,BOXES,(0,0,255),3)
+        cv2.imshow("frame",out)
 
 
 
-        append_heatmap_history(boxes)
-
-        boxes = history_to_single_list()
-
-        heat = np.zeros_like(out[:, :, 0]).astype(np.float)
-        heat = add_heat(heat, boxes)
-        cv2.imshow('heatmap', heat)
-        heat = apply_threshold(heat, 12)
-
-        heatmap = np.clip(heat, 0, 255)
-
-        labels = label(heatmap)
-
-        draw_img = draw_labeled_bboxes(np.copy(out), labels)
 
 
-        cv2.imshow('result', draw_img )
 
-        print("heatmap points:", boxes)
 
         filename = ("video/frame_{:04d}.png".format(frame_id))
-        cv2.imwrite(filename,draw_img)
+        cv2.imwrite(filename,out)
         frame_id += 1
 
 
