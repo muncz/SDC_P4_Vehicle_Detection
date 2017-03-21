@@ -8,4 +8,4 @@ pix_per_cell = 8
 cell_per_block = 2
 hog_channel = "ALL"  # Can be 0, 1, 2, or "ALL"
 
-TRAIN = True
+TRAIN = False

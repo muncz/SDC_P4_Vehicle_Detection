@@ -5,7 +5,7 @@ import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import random
 import settings
-
+import glob
 
 
 TRAIN = settings.TRAIN
@@ -60,9 +60,12 @@ def slide_window(img, classifier, y_start, y_stop, x_start, x_stop, overlay,show
         subimg = img[y_top:y_bot,x_left:x_right,:]
         feature_img = cv2.resize(subimg, (64, 64))
         concentrated_features = train.img_features(feature_img)
-        print(concentrated_features)
+        #print(concentrated_features)
         #print("x",concentrated_features.reshape(1,-1))
         concentrated_features = X_scaler.transform(concentrated_features)
+        #concentrated_features = X_scaler.transform(np.hstack(concentrated_features).reshape(1, -1))
+
+        #concentrated_features= np.array(concentrated_features).reshape((1, -1))
         sub_score = (classifier.predict(concentrated_features))
         if (sub_score[0] > 0):
             print("Found")
@@ -282,48 +285,96 @@ def append_heatmap_history(bboxes):
 
 
 
+#on my ubuntu machine
 frame_id = 0
-while(cap.isOpened()):
+images = sorted(glob.glob('in_images/video_*.png'))
+test_range_min = 500
+test_range_max = 700
+for x in images:
+    frame_id += 1
+    if frame_id < test_range_min or frame_id > test_range_max:
+        continue
+
+    in_img = cv2.imread(x)
+    cv2.imshow("frame",out)
+    boxes1 = slide_window(in_img, svc, 430, 660, 40, 1250, 0.5)
+    boxes2 = slide_window(in_img, svc, 388, 578, 40, 1250, 0.5)
+    boxes3 = slide_window(in_img, svc, 408, 524, 40, 1250, 0.5)
+    boxes4 = slide_window(in_img, svc, 408, 490, 40, 1250, 0.5)
+    boxes5 = slide_window(in_img, svc, 408, 460, 40, 1250, 0.5)
+    boxes6 = slide_window(in_img, svc, 412, 468, 40, 1250, 0.5)
+
+    BOXES = []
+    BOXES.append(boxes1)
+    BOXES.append(boxes2)
+    BOXES.append(boxes3)
+    BOXES.append(boxes4)
+    BOXES.append(boxes5)
+    BOXES.append(boxes6)
+
+    out = draw_boxes_list(in_img,BOXES,(0,0,255),3)
+    cv2.imshow("frame",out)
 
 
-    ret, out = cap.read()
-    in_img = out
-    if ret==True:
-
-
-
-        boxes1 = slide_window(out, svc, 430, 660, 40, 1250, 0.5)
-        boxes2 = slide_window(out, svc, 388, 578, 40, 1250, 0.5)
-        boxes3 = slide_window(out, svc, 408, 524, 40, 1250, 0.5)
-        boxes4 = slide_window(out, svc, 408, 490, 40, 1250, 0.5)
-        boxes5 = slide_window(out, svc, 408, 460, 40, 1250, 0.5)
-
-        BOXES = []
-        BOXES.append(boxes1)
-        BOXES.append(boxes2)
-        BOXES.append(boxes3)
-        BOXES.append(boxes4)
-
-        out = draw_boxes_list(in_img,BOXES,(0,0,255),3)
-        cv2.imshow("frame",out)
 
 
 
 
 
+    filename = ("video/frame_{:04d}.png".format(frame_id))
+    cv2.imwrite(filename,out)
 
 
-        filename = ("video/frame_{:04d}.png".format(frame_id))
-        cv2.imwrite(filename,out)
-        frame_id += 1
-
-
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            cv2.imwrite("report/sample_pre.png", in_img)
-            cv2.imwrite("report/sample_out.png", out)
-            break
-    else:
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        cv2.imwrite("report/sample_pre.png", in_img)
+        cv2.imwrite("report/sample_out.png", out)
         break
 
-cap.release()
+
+
+# On my windows machine
+# frame_id = 0
+# while(cap.isOpened()):
+#
+#
+#     ret, out = cap.read()
+#     in_img = out
+#     if ret==True:
+#
+#
+#
+#         boxes1 = slide_window(out, svc, 430, 660, 40, 1250, 0.5)
+#         boxes2 = slide_window(out, svc, 388, 578, 40, 1250, 0.5)
+#         boxes3 = slide_window(out, svc, 408, 524, 40, 1250, 0.5)
+#         boxes4 = slide_window(out, svc, 408, 490, 40, 1250, 0.5)
+#         boxes5 = slide_window(out, svc, 408, 460, 40, 1250, 0.5)
+#
+#         BOXES = []
+#         BOXES.append(boxes1)
+#         BOXES.append(boxes2)
+#         BOXES.append(boxes3)
+#         BOXES.append(boxes4)
+#
+#         out = draw_boxes_list(in_img,BOXES,(0,0,255),3)
+#         cv2.imshow("frame",out)
+#
+#
+#
+#
+#
+#
+#
+#         filename = ("video/frame_{:04d}.png".format(frame_id))
+#         cv2.imwrite(filename,out)
+#         frame_id += 1
+#
+#
+#         if cv2.waitKey(1) & 0xFF == ord('q'):
+#             cv2.imwrite("report/sample_pre.png", in_img)
+#             cv2.imwrite("report/sample_out.png", out)
+#             break
+#     else:
+#         break
+#
+# cap.release()
 #cv2.destroyAllWindows()
