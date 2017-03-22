@@ -60,12 +60,7 @@ def slide_window(img, classifier, y_start, y_stop, x_start, x_stop, overlay,show
         subimg = img[y_top:y_bot,x_left:x_right,:]
         feature_img = cv2.resize(subimg, (64, 64))
         concentrated_features = train.img_features(feature_img)
-        #print(concentrated_features)
-        #print("x",concentrated_features.reshape(1,-1))
         concentrated_features = X_scaler.transform(concentrated_features)
-        #concentrated_features = X_scaler.transform(np.hstack(concentrated_features).reshape(1, -1))
-
-        #concentrated_features= np.array(concentrated_features).reshape((1, -1))
         sub_score = (classifier.predict(concentrated_features))
         if (sub_score[0] > 0):
             print("Found")
@@ -249,7 +244,7 @@ def append_heatmap_history(bboxes):
 #on my ubuntu machine
 frame_id = 0
 images = sorted(glob.glob('in_images/video_*.png'))
-test_range_min = 0
+test_range_min = 1030
 test_range_max = 2700
 for x in images:
     frame_id += 1
@@ -273,6 +268,9 @@ for x in images:
     BOXES.append(boxes5)
     BOXES.append(boxes6)
 
+    boxes_img = draw_boxes_list(in_img,BOXES)
+    cv2.imshow("boxews", boxes_img)
+
     append_heatmap_history(boxes1)
     append_heatmap_history(boxes2)
     append_heatmap_history(boxes3)
@@ -284,14 +282,12 @@ for x in images:
 
     heat = np.zeros_like(in_img[:, :, 0]).astype(np.float)
     heatmap = add_heat(heat,heat_boxes)
-    # plt.imshow(heatmap)
-    # plt.show()
     cv2.imshow("heatmap", heatmap)
+    plt.imshow(heatmap)
+    plt.show()
     heatmap = apply_threshold(heatmap, 2)
 
-
     heatmap = np.clip(heat, 0, 255)
-
     labels = label(heatmap)
 
     draw_img = draw_labeled_bboxes(np.copy(in_img), labels)
