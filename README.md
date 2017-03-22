@@ -303,19 +303,19 @@ Here's an example result showing the heatmap from a series of frames of video, t
 
 Heatmap:
 
-![heatmap](output_images/heatmap1.PNG)
+![heatmap](output_images/heatmap1.png)
 
 As we can see there is small false detection on the left part of image however thanks to the threshold it has beed rejected, because it appeard only for single frame
 
 Result:
 
-![heatmap](output_images/heat_boxes_single.jpg)
+![heatmap](output_images/heat_boxes_single.JPG)
 
 
 Previous:
 Just for comparision what we would see without heatmap filter
 
-![heatmap](output_images/heat_boxes.jpg)
+![heatmap](output_images/heat_boxes.JPG)
 
 ### Video Pipline
 In order to record video steps were given:
