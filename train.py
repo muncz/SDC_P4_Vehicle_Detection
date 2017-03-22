@@ -79,9 +79,8 @@ def img_features(image):
     else:
         feature_image = np.copy(image)
 
-    # Call get_hog_features() with vis=False, feature_vec=True
+
     spatial_features = bin_spatial(feature_image, size=spatial_size)
-    # Apply color_hist() also with a color space option now
     hist_features = color_hist(feature_image, nbins=hist_bins, bins_range=hist_range)
 
     if hog_channel == 'ALL':

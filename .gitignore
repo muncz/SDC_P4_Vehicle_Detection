@@ -3,3 +3,4 @@ __pycache__
 out_video
 video
 in_images
+heatmap

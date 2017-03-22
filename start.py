@@ -176,66 +176,33 @@ def draw_boxes_list(img, bboxes_list, color=(0, 0, 255), thick=3):
         # Return the image copy with boxes drawn
     return draw_img
 
-# img = mpimg.imread("report/sample1.png")
-# boxes1 = slide_window(img,svc,430,660,40,1250,0.5)
-# boxes2 = slide_window(img,svc,388,578,40,1250,0.5)
-# boxes3 = slide_window(img,svc,408,524,40,1250,0.5)
-# boxes4 = slide_window(img,svc,408,490,40,1250,0.5)
-# boxes5 = slide_window(img,svc,408,460,40,1250,0.5)
-#
-# BOXES = []
-# BOXES.append(boxes1)
-# BOXES.append(boxes2)
-# BOXES.append(boxes3)
-# BOXES.append(boxes4)
-# BOXES.append(boxes5)
-
-
-# out_img = draw_boxes_list(img,BOXES)
-# plt.imshow(out_img)
-# plt.show()
-
 
 def history_to_single_list():
     bbox_list = []
     for history in heatmap_history:
         for box in history:
             bbox_list.append(box)
+    print(bbox_list)
     return bbox_list
 
 
-cap = cv2.VideoCapture('project_video.mp4')
-cap = cv2.VideoCapture('test_video.mp4')
-# cap = cv2.VideoCapture('harder_challenge_video.mp4')
-#cap = cv2.VideoCapture('challenge_video.mp4')
-
-ystart = 400
-ystop = 656
-scale = 1.5
-
-img = mpimg.imread("report/sample1.png")
+# cap = cv2.VideoCapture('project_video.mp4')
+# cap = cv2.VideoCapture('test_video.mp4')
 
 
-
-out_img,boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins)
-
-print(boxes)
-
-
-
-
-out = draw_boxes(out_img,boxes)
-
-heat = np.zeros_like(out[:,:,0]).astype(np.float)
 
 def add_heat(heatmap, bbox_list):
     # Iterate through list of bboxes
     for box in bbox_list:
         # Add += 1 for all pixels inside each bbox
         # Assuming each "box" takes the form ((x1, y1), (x2, y2))
-        heatmap[box[0][1]:box[1][1], box[0][0]:box[1][0]] += 1
+        heatmap[box[1][1]:box[0][1], box[0][0]:box[1][0]] += 1
+        # print("aloha",box[0][1],box[1][1], box[0][0],box[1][0] )
+
 
     # Return updated heatmap
+    # plt.imshow(heatmap)
+    # plt.show()
     return heatmap# Iterate through list of bboxes
 
 def apply_threshold(heatmap, threshold):
@@ -263,20 +230,14 @@ def draw_labeled_bboxes(img, labels):
 
 from scipy.ndimage.measurements import label
 
-heat = add_heat(heat,boxes)
-heat = apply_threshold(heat,3)
 
-heatmap = np.clip(heat, 0, 255)
 
-labels = label(heatmap)
 
-draw_img = draw_labeled_bboxes(np.copy(out_img), labels)
-
-plt.imshow(draw_img)
-plt.show()
+# plt.imshow(draw_img)
+# plt.show()
 
 heatmap_history = []
-heatmap_history_length = 12
+heatmap_history_length = 40
 
 def append_heatmap_history(bboxes):
     heatmap_history.append(bboxes)
@@ -288,15 +249,15 @@ def append_heatmap_history(bboxes):
 #on my ubuntu machine
 frame_id = 0
 images = sorted(glob.glob('in_images/video_*.png'))
-test_range_min = 500
-test_range_max = 700
+test_range_min = 0
+test_range_max = 2700
 for x in images:
     frame_id += 1
     if frame_id < test_range_min or frame_id > test_range_max:
         continue
 
     in_img = cv2.imread(x)
-    cv2.imshow("frame",out)
+
     boxes1 = slide_window(in_img, svc, 430, 660, 40, 1250, 0.5)
     boxes2 = slide_window(in_img, svc, 388, 578, 40, 1250, 0.5)
     boxes3 = slide_window(in_img, svc, 408, 524, 40, 1250, 0.5)
@@ -312,8 +273,35 @@ for x in images:
     BOXES.append(boxes5)
     BOXES.append(boxes6)
 
+    append_heatmap_history(boxes1)
+    append_heatmap_history(boxes2)
+    append_heatmap_history(boxes3)
+    append_heatmap_history(boxes4)
+    append_heatmap_history(boxes5)
+    append_heatmap_history(boxes6)
+
+    heat_boxes = history_to_single_list()
+
+    heat = np.zeros_like(in_img[:, :, 0]).astype(np.float)
+    heatmap = add_heat(heat,heat_boxes)
+    # plt.imshow(heatmap)
+    # plt.show()
+    cv2.imshow("heatmap", heatmap)
+    heatmap = apply_threshold(heatmap, 2)
+
+
+    heatmap = np.clip(heat, 0, 255)
+
+    labels = label(heatmap)
+
+    draw_img = draw_labeled_bboxes(np.copy(in_img), labels)
+
+
+
+
     out = draw_boxes_list(in_img,BOXES,(0,0,255),3)
-    cv2.imshow("frame",out)
+    cv2.imshow("frame",draw_img)
+
 
 
 
@@ -323,6 +311,8 @@ for x in images:
 
     filename = ("video/frame_{:04d}.png".format(frame_id))
     cv2.imwrite(filename,out)
+    filename = ("heatmap/frame_{:04d}.png".format(frame_id))
+    cv2.imwrite(filename,draw_img)
 
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
